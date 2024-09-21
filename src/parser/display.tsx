@@ -38,6 +38,18 @@ const stringDisplayer = (val: Span, png: Png) => {
     return png.buffer.stringForSpan(val)
 };
 
+const ORIENTATION: Record<number, string> = {
+    1: "default",
+    2: "flipped horizontally",
+    3: "rotated 180 degrees clockwise",
+    4: "rotated 180 degrees clockwise, then flipped horizontally",
+    5: "rotated 90 degrees clockwise, then flipped horizontally",
+    6: "rotated 90 degrees clockwise",
+    7: "rotated 270 degrees clockwise, then flipped horizontally",
+    8: "rotated 270 degrees clockwise",
+}
+
+
 function ExifValue({ field }: { field: ExifField }) {
     const fmtName = React.useCallback((name: string) => name.split('.').pop()!, []);
 
@@ -73,6 +85,10 @@ function ExifValue({ field }: { field: ExifField }) {
             } else {
                 value = JSON.stringify(field.value);
             }
+    }
+
+    if (field.name === "Exif.Image.Orientation") {
+        value = ORIENTATION[field.value as number] ?? field.value;
     }
 
     return <div>
