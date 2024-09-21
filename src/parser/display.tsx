@@ -39,14 +39,14 @@ const stringDisplayer = (val: Span, png: Png) => {
 };
 
 const ORIENTATION: Record<number, string> = {
-    1: "default",
-    2: "flipped horizontally",
-    3: "rotated 180 degrees clockwise",
-    4: "rotated 180 degrees clockwise, then flipped horizontally",
-    5: "rotated 90 degrees clockwise, then flipped horizontally",
-    6: "rotated 90 degrees clockwise",
-    7: "rotated 270 degrees clockwise, then flipped horizontally",
-    8: "rotated 270 degrees clockwise",
+    1: "default (1)",
+    2: "flipped horizontally (2)",
+    3: "rotated 180 degrees (3)",
+    4: "flipped vertically (4)",
+    5: "rotated 90 degrees clockwise, then flipped horizontally (5)",
+    6: "rotated 90 degrees clockwise (6)",
+    7: "rotated 270 degrees clockwise, then flipped horizontally (7)",
+    8: "rotated 270 degrees clockwise (8)",
 }
 
 
@@ -223,10 +223,6 @@ const CHUNK_DISPLAY_DEFINITIONS: Partial<{ [k in keyof typeof CHUNK_DEFINITIONS]
         text: stringDisplayer,
     }
 };
-
-export function hasHide(field: string): boolean {
-    return ["buffer"].includes(field);
-}
 
 const UNTYPED_CHUNK_DISPLAY_DEFINITIONS = CHUNK_DISPLAY_DEFINITIONS as Record<string, Record<string, DisplayFunc>>;
 
