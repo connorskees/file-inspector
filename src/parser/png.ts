@@ -185,6 +185,14 @@ export const CHUNK_DEFINITIONS = {
     },
     "sRGB": {
         rendering_intent: ChunkFieldKind.U8,
+    },
+    "iTXt": {
+        keyword: ChunkFieldKind.NullTerminated,
+        compression_flag: ChunkFieldKind.U8,
+        compression_method: ChunkFieldKind.U8,
+        language_tag: ChunkFieldKind.NullTerminated,
+        translated_keyword: ChunkFieldKind.NullTerminated,
+        text: ChunkFieldKind.Buffer,
     }
 };
 

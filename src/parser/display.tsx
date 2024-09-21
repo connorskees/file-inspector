@@ -122,6 +122,10 @@ const iccDisplayer = (val: Span, png: Png) => {
 export function HiddenBuffer({ buffer, preview, monospaced }: { buffer: React.ReactNode, preview?: string, monospaced?: boolean }) {
     const [showingBuffer, setShowingBuffer] = React.useState(false)
 
+    if (typeof buffer === 'string' && buffer.length < 50) {
+        return buffer;
+    }
+
     const fontFamily = monospaced ? 'monospace' : undefined;
 
     return <>
@@ -168,7 +172,6 @@ function bufferToString(buffer: Uint8Array | number[]): string {
 const compressedStringDisplayer = (val: Span, png: Png) => {
     const compressed = png.buffer.bytesForSpan(val);
     const decompressed = pako.inflate(compressed);
-
     return <HiddenBuffer buffer={bufferToString(decompressed)} />
 };
 
@@ -212,6 +215,12 @@ const CHUNK_DISPLAY_DEFINITIONS: Partial<{ [k in keyof typeof CHUNK_DEFINITIONS]
     },
     sRGB: {
         rendering_intent: enumGenerator(RenderingIntent),
+    },
+    iTXt: {
+        keyword: stringDisplayer,
+        language_tag: stringDisplayer,
+        translated_keyword: stringDisplayer,
+        text: stringDisplayer,
     }
 };
 
