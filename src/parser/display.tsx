@@ -91,6 +91,10 @@ function ExifValue({ field }: { field: ExifField }) {
         value = ORIENTATION[field.value as number] ?? field.value;
     }
 
+    if (field.name === "Exif.Photo.UserComment" && Array.isArray(field.value)) {
+        value = bufferToString(field.value as number[]);
+    }
+
     return <div>
         <span style={{ fontWeight: 600 }}>{(field.name && fmtName(field.name)) ?? `unrecognized field ${field.tag}`}</span>: {value}
     </div>
@@ -158,15 +162,10 @@ const bufferDisplayer = (val: Span, png: Png) => {
     return `<${strs.join(' ')}>`
 };
 
+const textDecoder = new TextDecoder("utf-8");
+
 function bufferToString(buffer: Uint8Array | number[]): string {
-    let result = ""
-
-    for (let i = 0; i < buffer.length; i += 1) {
-        result += String.fromCharCode(buffer[i]);
-    }
-
-    return result;
-
+    return textDecoder.decode(new Uint8Array(buffer));
 }
 
 const compressedStringDisplayer = (val: Span, png: Png) => {

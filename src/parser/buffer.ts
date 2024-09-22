@@ -3,6 +3,8 @@ export interface Span {
     end: number,
 }
 
+const textDecoder = new TextDecoder("utf-8");
+
 export class BufferParser {
     private buffer: DataView;
     constructor(_buffer: Uint8Array, public index = 0) {
@@ -60,13 +62,7 @@ export class BufferParser {
     }
 
     stringForSpan(span: Span) {
-        let result = ""
-
-        for (let i = span.start; i < span.end; i += 1) {
-            result += String.fromCharCode(this.buffer.getUint8(i));
-        }
-
-        return result;
+        return textDecoder.decode(this.bytesForSpan(span));
     }
 
     bytesForSpan(span: Span) {
