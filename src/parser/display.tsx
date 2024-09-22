@@ -395,7 +395,11 @@ const CHUNK_DISPLAY_DEFINITIONS: Partial<{ [k in keyof typeof CHUNK_DEFINITIONS]
     },
     tRNS: {
         transparent_color: trnsFormatter,
+    },
+    oFFs: {
+        unit: enumFormatter({ 0: "pixels", 1: "micrometers" }),
     }
+
 };
 
 const UNTYPED_CHUNK_DISPLAY_DEFINITIONS = CHUNK_DISPLAY_DEFINITIONS as Record<string, Record<string, DisplayFunc>>;

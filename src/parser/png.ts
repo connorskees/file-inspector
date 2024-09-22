@@ -71,6 +71,8 @@ export class PngParser {
                 return this.buffer.readU16();
             case ChunkFieldKind.U32:
                 return this.buffer.readU32();
+            case ChunkFieldKind.I32:
+                return this.buffer.readI32();
             case ChunkFieldKind.NullTerminated:
                 return this.buffer.readNullTerminatedString();
             case ChunkFieldKind.Buffer:
@@ -122,6 +124,7 @@ export enum ChunkFieldKind {
     U8,
     U16,
     U32,
+    I32,
     NullTerminated,
     Buffer,
 }
@@ -207,6 +210,11 @@ export const CHUNK_DEFINITIONS = {
     },
     "tRNS": {
         transparent_color: ChunkFieldKind.Buffer,
+    },
+    "oFFs": {
+        x_position: ChunkFieldKind.I32,
+        y_position: ChunkFieldKind.I32,
+        unit: ChunkFieldKind.U8,
     }
 };
 
