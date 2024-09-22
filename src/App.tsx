@@ -17,15 +17,15 @@ function ChunkDataField({ png, chunk, fieldName, data }: ChunkDataFieldProps) {
   }
   const displayFunc = getDisplayFunc(chunk.name(), fieldName)
   if (displayFunc) {
-    data = displayFunc(data, png);
+    data = displayFunc(data, png, chunk);
   } else {
     data = JSON.stringify(data)
   }
 
-  const hideKey = false;// Object.keys(chunk.parsedData ?? {}).length === 1 && data.type?.name === 'HiddenBuffer'
+  const hideKey = false; // Object.keys(chunk.parsedData ?? {}).length === 1 && data.type?.name === 'HiddenBuffer'
 
-  return <div style={{ marginBottom: 8 }}>
-    <div>{!hideKey && <><span style={{ fontWeight: 600 }}>{fieldName}</span>:</>} {data}</div>
+  return <div style={{ marginBottom: 8, display: hideKey ? 'inline' : undefined }}>
+    <span style={{ fontWeight: 600 }}>{fieldName}</span>: {data}
   </div>
 }
 
@@ -42,7 +42,6 @@ function App() {
     const buffer = await file.arrayBuffer()
     const parser = new PngParser(new Uint8Array(buffer))
     const png = parser.parse()
-    console.log({ names: png.chunks.map(c => c.name()) })
     setPng(png);
   }, [])
 
@@ -81,17 +80,6 @@ function App() {
 
   const chunks = idatChunks && idatChunks?.length > 3 ? nonIdatChunks : png?.chunks;
 
-  // const chunks = png?.chunks.reduce((allChunks: Chunk[], chunk) => {
-  //   if (chunk.name() === "IDAT" && allChunks[allChunks.length - 1]?.name() === 'IDAT') {
-  //     if () {
-
-  //     }
-  //   } else {
-  //     allChunks.push(chunk);
-  //   }
-  //   return allChunks;
-  // }, [])
-
   return (
     <>
       <div style={{ display: 'flex' }}>
@@ -110,10 +98,12 @@ function App() {
             </thead>
             <tbody>
               {chunks?.map(chunk => {
+                const isSingle = false; // Object.keys(chunk.parsedData ?? {}).length === 1
+                const verticalAlign = isSingle ? 'middle' : "top";
                 return <tr>
-                  <td style={{ verticalAlign: "top", textAlign: 'left' }}>{chunk.name()}</td>
-                  <td style={{ verticalAlign: "top", textAlign: 'right', paddingRight: 16 }}>{chunk.size()} bytes</td>
-                  <td style={{ verticalAlign: "top", textAlign: 'left', width: '80ch' }}>{Object.entries(chunk.parsedData ?? {}).map(([key, value]) => {
+                  <td style={{ verticalAlign, textAlign: 'left' }}>{chunk.name()}</td>
+                  <td style={{ verticalAlign, textAlign: 'right', paddingRight: 16 }}>{chunk.size()} bytes</td>
+                  <td style={{ verticalAlign, textAlign: 'left', width: '80ch' }}>{Object.entries(chunk.parsedData ?? {}).map(([key, value]) => {
                     return <ChunkDataField png={png} chunk={chunk} fieldName={key} data={value} />
                   })}</td>
                 </tr>

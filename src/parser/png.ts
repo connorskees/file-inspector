@@ -54,7 +54,7 @@ export class PngParser {
     }
 
     parseChunkDefinition(definition: Record<string, ChunkFieldKind>, chunkEnd: number) {
-        let obj: Record<string, any> = {}
+        let obj: Record<string, PngFieldValue> = {}
 
         for (const [name, type] of Object.entries(definition)) {
             obj[name] = this.parseFieldKind(type, chunkEnd);
@@ -96,6 +96,8 @@ function chunkNameToString(name: ChunkName): string {
     return `${String.fromCharCode(name[0])}${String.fromCharCode(name[1])}${String.fromCharCode(name[2])}${String.fromCharCode(name[3])}`
 }
 
+export type PngFieldValue = number | Span;
+
 type ChunkName = [number, number, number, number]
 
 export class Chunk {
@@ -103,7 +105,7 @@ export class Chunk {
         private readonly _name: ChunkName,
         readonly rawData: Span,
         readonly crc: number,
-        readonly parsedData?: object,
+        readonly parsedData?: Record<string, PngFieldValue>,
     ) { }
 
     name() {
@@ -168,7 +170,7 @@ export const CHUNK_DEFINITIONS = {
         keyword: ChunkFieldKind.NullTerminated,
         text: ChunkFieldKind.Buffer,
     },
-    "oRNT": {
+    "orNT": {
         // https://github.com/ImageMagick/ImageMagick/commit/ba8f091f047754d6575b7101a47a6c6c778cc12b#diff-47f07ef0f1c4650948916afbed64f9b2cf620656f9f4f879685849c76fa9ec20R1984
         orientation: ChunkFieldKind.U8,
     },
@@ -193,6 +195,18 @@ export const CHUNK_DEFINITIONS = {
         language_tag: ChunkFieldKind.NullTerminated,
         translated_keyword: ChunkFieldKind.NullTerminated,
         text: ChunkFieldKind.Buffer,
+    },
+    "PLTE": {
+        colors: ChunkFieldKind.Buffer,
+    },
+    "sBIT": {
+        significant_bits: ChunkFieldKind.Buffer,
+    },
+    "bKGD": {
+        background: ChunkFieldKind.Buffer,
+    },
+    "tRNS": {
+        transparent_color: ChunkFieldKind.Buffer,
     }
 };
 

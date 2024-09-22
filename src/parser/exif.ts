@@ -36,6 +36,7 @@ function fieldTypeSize(type: number): number {
 const EXIF_TAG = 34665;
 const GPS_TAG = 34853;
 
+// https://oss-attachment.cn-hangzhou.oss.aliyun-inc.com/DC-008-Translation-2016-E.pdf
 export class ExifParser {
     private buffer: BufferParser;
     constructor(_buffer: Uint8Array) {
@@ -209,6 +210,7 @@ export class ExifParser {
 // // LITTLE ENDIAN
 // const II = ('I'.charCodeAt(0) << 8) | 'I'.charCodeAt(0);
 
+// https://exiv2.org/tags.html
 const TAGS = [
     { tag: 11, name: "Exif.Image.ProcessingSoftware", description: "The name and version of the software used to post-process the picture.", },
     { tag: 254, name: "Exif.Image.NewSubfileType", description: "A general indication of the kind of data contained in this subfile.", },
