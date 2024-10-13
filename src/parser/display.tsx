@@ -173,7 +173,7 @@ const bkgdFormatter = (val: Span, png: Png) => {
     }
 };
 
-function ColorPreview({ color, name }: { color: string; name: string }) {
+export function ColorPreview({ color, name }: { color: string; name: string }) {
     return <div style={{ display: 'flex', alignItems: 'center', fontFamily: "monospace" }}>
         <div style={{ width: 8, height: 8, background: color, marginRight: 8 }}></div>
         {name}

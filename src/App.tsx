@@ -2,6 +2,30 @@ import React, { ChangeEvent } from 'react'
 import './App.css'
 import { Chunk, Png, PngParser } from './parser/png'
 import { getDisplayFunc, } from './parser/display'
+import { Gif, GifImageDecoder, GifParser } from './parser/gif';
+import { GifDisplayer } from './parser/gif-display';
+
+function createCanvasFromRGBAData(data: number[][], width: number, height: number, canvas: HTMLCanvasElement) {
+  // `data` should look something like [[123,32,40,255], [3,233,42,120], ...]
+  // if (width * height !== data.length) throw new Error("width*height should equal data.length");
+  // let canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  let ctx = canvas.getContext("2d")!;
+  let imgData = ctx.createImageData(width, height);
+  for (let i = 0; i < data.length; i++) {
+    if (!data[i]) {
+      console.log({ len: data.length, last: data[data.length - 1], i, data })
+    }
+    imgData.data[i * 4 + 0] = data[i][0];
+    imgData.data[i * 4 + 1] = data[i][1];
+    imgData.data[i * 4 + 2] = data[i][2];
+    imgData.data[i * 4 + 3] = data[i][3] ?? 255;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return canvas;
+}
+
 
 interface ChunkDataFieldProps {
   png: Png,
@@ -31,6 +55,7 @@ function ChunkDataField({ png, chunk, fieldName, data }: ChunkDataFieldProps) {
 
 function App() {
   const [png, setPng] = React.useState<Png | null>(null);
+  const [gif, setGif] = React.useState<Gif | null>(null);
   const [imageSource, setImageSource] = React.useState<string | undefined>();
 
   const cb = React.useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
@@ -40,9 +65,17 @@ function App() {
     }
     setImageSource(URL.createObjectURL(file));
     const buffer = await file.arrayBuffer()
-    const parser = new PngParser(new Uint8Array(buffer))
-    const png = parser.parse()
-    setPng(png);
+
+    if (file.type === "image/gif") {
+      const parser = new GifParser(new Uint8Array(buffer))
+      const gif = parser.parse()
+      setGif(gif)
+    }
+
+    if (file.type === "image/png") {
+      const parser = new PngParser(new Uint8Array(buffer))
+      setPng(parser.parse());
+    }
   }, [])
 
   const inputRef = React.useRef<HTMLInputElement | null>(null);
@@ -57,7 +90,6 @@ function App() {
 
     const dropCb = (e: any) => {
       if (inputRef.current) {
-        console.log('heyyy')
         inputRef.current.files = e.dataTransfer.files;
         e.preventDefault()
         cb({ target: inputRef.current } as any)
@@ -80,12 +112,48 @@ function App() {
 
   const chunks = idatChunks && idatChunks?.length > 3 ? nonIdatChunks : png?.chunks;
 
+  const canvasRef = React.useRef(null)
+
+  React.useEffect(() => {
+    (async () => {
+      if (!canvasRef.current || !gif) {
+        return;
+      }
+
+      console.log({ gif })
+
+      for (const image of gif.images) {
+        const decoder = new GifImageDecoder(gif, image)
+        const transparentColorIndex: number | undefined = image.extensions.find(ext => ext["transparentColorIndex"] !== undefined).transparentColorIndex
+        const pixels = decoder.decode().map(idx => {
+          // todo: likely bogus
+          if (idx === transparentColorIndex) {
+            return [0, 0, 0, 0]
+          }
+          const color = gif.globalColorTable?.colors[idx]
+          if (color === undefined) {
+            console.error('color index oob', idx)
+          }
+          return color ?? [255, 0, 0, 255]
+        })
+        console.log({ gif, pixels })
+
+        createCanvasFromRGBAData(pixels, gif.logicalScreenDescriptor.width, gif.logicalScreenDescriptor.height, canvasRef.current)
+        await new Promise(r => setTimeout(r, 250));
+        // break;
+      }
+
+    })()
+  }, [gif, canvasRef])
+
   return (
     <>
+      {/* <canvas id="canvas" ref={canvasRef}></canvas> */}
       <div style={{ display: 'flex' }}>
         <input type="file" accept="image/png" onChange={cb} ref={inputRef} />
         {imageSource && <img src={imageSource} height={75} />}
       </div>
+      {gif && <GifDisplayer gif={gif} />}
       {png &&
         <div>
           <table>
