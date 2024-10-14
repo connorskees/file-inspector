@@ -42,8 +42,8 @@ export function HiddenBuffer({ buffer, preview, monospaced, onFirstShow, showBut
     </>
 }
 
-export function ColorPreview({ color, name }: { color: string; name: string }) {
-    return <div style={{ display: 'flex', alignItems: 'center', fontFamily: "monospace" }}>
+export function ColorPreview({ color, name, inline }: { color: string; name: string, inline?: boolean }) {
+    return <div style={{ display: inline ? 'inline-flex' : 'flex', alignItems: 'center', fontFamily: "monospace" }}>
         <div style={{ width: 8, height: 8, background: color, marginRight: 8 }}></div>
         {name}
     </div>

@@ -29,7 +29,7 @@ interface ApplicationExtension extends Spanned {
     terminator: number;
 }
 
-interface GraphicsControlExtension extends Spanned {
+export interface GraphicsControlExtension extends Spanned {
     kind: "graphics";
     blockSize: number
     bitflags: number

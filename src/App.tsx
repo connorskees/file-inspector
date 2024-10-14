@@ -115,9 +115,11 @@ function App() {
     return () => dropZone.removeEventListener('drop', dropCb);
   }, [inputRef.current])
 
+  const f = false;
+
   return (
     <>
-      {/* {gif && gif.images.map(img => <GifFrame gif={gif} image={img} />)} */}
+      {f && gif && gif.images.map(img => <GifFrame gif={gif} image={img} />)}
       <div style={{ display: 'flex' }}>
         <input type="file" accept="image/*" onChange={cb} ref={inputRef} />
         {imageSource && <img src={imageSource} height={75} style={{ marginLeft: 8 }} />}
