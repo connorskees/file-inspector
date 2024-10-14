@@ -1,7 +1,7 @@
 import React from 'react'
 import { ColorTable, Extension, Gif, GifImageDecoder, Image } from '../parse/gif'
-import { ColorPreview, HiddenBuffer } from './png';
-import { BufferParser, Span } from '../parse/buffer';
+import { Span } from '../parse/buffer';
+import { BufferFormatter, HiddenBuffer, ColorPreview } from './shared';
 
 // const GIF_CHUNK_DEFINITIONS = {
 //     global_color_table: (gif: Gif) => ({
@@ -15,39 +15,6 @@ import { BufferParser, Span } from '../parse/buffer';
 //         body: <>{gif.globalColorTable && <ColorArrayDisplayer colors={gif.globalColorTable.colors} />}</>
 //     }),
 // }
-
-function BufferFormatter({ span, _buffer }: { span: Span, _buffer: BufferParser }) {
-    const buffer = new DataView(_buffer.bytesForSpan(span));
-    const fmt = (idx: number) => buffer.getUint8(idx).toString(16).padStart(2, "0")
-
-    const [str, setStr] = React.useState<string | null>(null);
-
-    const createStr = React.useCallback(() => {
-        if (str !== null) {
-            return;
-        }
-
-        const strs = []
-
-        for (let i = 0; i < buffer.byteLength; i += 1) {
-            strs.push(fmt(i));
-        }
-
-        setStr(strs.join(' '))
-    }, [span, fmt, str])
-
-    if (str === null && buffer.byteLength < 32) {
-        createStr();
-    }
-
-    if (buffer.byteLength > 32) {
-        const preview = `${fmt(0)} ${fmt(1)} ... ${fmt(buffer.byteLength - 2)} ${fmt(buffer.byteLength - 1)}`
-        return <HiddenBuffer monospaced preview={preview} buffer={str} onFirstShow={createStr} />
-    }
-
-    return <span style={{ fontFamily: 'monospace' }}>{`<${str}>`}</span>
-
-}
 
 interface GifChunkRowProps {
     title: string;
@@ -84,7 +51,6 @@ function JsonDisplayer({ fields }: { name?: string, fields: object }) {
             <span style={{ fontWeight: 600 }}>{key}</span>: {data}
         </div>
     })
-
 }
 
 function ImageDataFormatter({ gif, image }: { gif: Gif, image: Image }) {

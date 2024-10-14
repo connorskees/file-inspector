@@ -5,6 +5,10 @@ export interface Span {
 
 const textDecoder = new TextDecoder("utf-8");
 
+export function bufferToString(buffer: Uint8Array | number[]): string {
+    return textDecoder.decode(new Uint8Array(buffer));
+}
+
 export class BufferParser {
     private buffer: DataView;
     constructor(_buffer: Uint8Array, public littleEndian: boolean = false, public index = 0) {

@@ -1,9 +1,12 @@
 import React from "react";
 import pako from 'pako';
-import { Span } from "../parse/buffer";
+import { bufferToString, Span } from "../parse/buffer";
 import { Chunk, CHUNK_DEFINITIONS, Png } from "../parse/png";
-import { ExifField, ExifParser } from "../parse/exif";
+import { ExifParser } from "../parse/exif";
 import { parse as iccParse } from '../parse/iccp';
+import { ExifValue, ORIENTATION } from "./exif";
+import { enumFormatter } from "./shared";
+import { BufferFormatter, HiddenBuffer, ColorPreview } from './shared';
 
 enum InterlaceMethod {
     none = 0,
@@ -28,47 +31,6 @@ enum RenderingIntent {
     relative_colorimetric = 1,
     saturation = 2,
     absolute_colorimetric = 3,
-}
-
-interface HiddenBufferProps {
-    buffer: React.ReactNode,
-    preview?: string,
-    monospaced?: boolean
-    onFirstShow?: () => void
-    showButtonText?: string
-    hideButtonText?: string
-}
-
-export function HiddenBuffer({ buffer, preview, monospaced, onFirstShow, showButtonText, hideButtonText }: HiddenBufferProps) {
-    const [showingBuffer, setShowingBuffer] = React.useState(false)
-    const [hasShown, setHasShown] = React.useState(false)
-
-    if (typeof buffer === 'string' && buffer.length < 50) {
-        return buffer;
-    }
-
-    const fontFamily = monospaced ? 'monospace' : undefined;
-
-    return <>
-        {preview && <span style={{ marginRight: 8 }}>&lt;<span style={{ fontFamily }}>{preview}</span>&gt;</span>}
-        <button onClick={() => {
-            if (!hasShown) {
-                setHasShown(true)
-                onFirstShow?.()
-            }
-            setShowingBuffer(v => !v)
-        }}>
-            {showingBuffer ? (hideButtonText ?? 'hide') : (showButtonText ?? 'show')}
-        </button>
-        <br />
-        <div style={{ fontFamily, maxWidth: '80ch' }}>
-            {showingBuffer ? buffer : ''}
-        </div>
-    </>
-}
-
-function enumFormatter(en: Record<number, string>) {
-    return (val: number) => `${en[val] ?? 'unrecognized value'} (${val})`;
 }
 
 const stringFormatter = (val: Span, png: Png) => {
@@ -189,13 +151,6 @@ const bkgdFormatter = (val: Span, png: Png) => {
     }
 };
 
-export function ColorPreview({ color, name }: { color: string; name: string }) {
-    return <div style={{ display: 'flex', alignItems: 'center', fontFamily: "monospace" }}>
-        <div style={{ width: 8, height: 8, background: color, marginRight: 8 }}></div>
-        {name}
-    </div>
-}
-
 function plteFormatter(val: Span, png: Png) {
     const buffer = new DataView(png.buffer.bytesForSpan(val));
     const pixels = []
@@ -222,75 +177,6 @@ function plteFormatter(val: Span, png: Png) {
     return <>{colors}</>;
 }
 
-const ORIENTATION: Record<number, string> = {
-    1: "default",
-    2: "flipped horizontally",
-    3: "rotated 180 degrees",
-    4: "flipped vertically",
-    5: "rotated 90 degrees clockwise, then flipped horizontally",
-    6: "rotated 90 degrees clockwise",
-    7: "rotated 270 degrees clockwise, then flipped horizontally",
-    8: "rotated 270 degrees clockwise",
-}
-
-
-function ExifValue({ field }: { field: ExifField }) {
-    const fmtName = React.useCallback((name: string) => name.split('.').pop()!, []);
-
-    let value;
-    switch (field.type) {
-        case 2: {
-            if (!Array.isArray(field.value)) {
-                value = [field.value];
-            }
-            value = bufferToString(field.value as number[])
-            break;
-        }
-        case 5:
-        case 10:
-            if (Array.isArray(field.value)) {
-                value = (field.value as ({
-                    numerator: number;
-                    denom: number;
-                })[]).map(({ numerator, denom }) => {
-                    if (denom === 1) {
-                        return numerator;
-                    }
-
-                    return `${+(numerator / denom).toFixed(5)} (${numerator}/${denom})`
-                }).join(', ')
-            }
-            break;
-        default:
-            if (Array.isArray(field.value) && field.value.length > 25) {
-                value = <HiddenBuffer buffer={<p style={{ maxWidth: '80ch' }}>
-                    {field.value.join(' ')}
-                </p>} />
-            } else {
-                value = JSON.stringify(field.value);
-            }
-    }
-
-    if (field.name === "Exif.Image.Orientation") {
-        value = enumFormatter(ORIENTATION)(field.value as number);
-    }
-
-    if (field.name === "Exif.Photo.UserComment" && Array.isArray(field.value)) {
-        value = bufferToString(field.value as number[]);
-    }
-
-    if (field.name === "Exif.Photo.ExifVersion" && Array.isArray(field.value)) {
-        value = bufferToString(field.value as number[]);
-    }
-
-    if (field.name === "Exif.Photo.FlashpixVersion" && Array.isArray(field.value)) {
-        value = bufferToString(field.value as number[]);
-    }
-
-    return <div>
-        <span style={{ fontWeight: 600 }}>{(field.name && fmtName(field.name)) ?? `unrecognized field ${field.tag}`}</span>: {value}
-    </div>
-}
 
 const exifFormatter = (val: Span, png: Png) => {
     const buffer = png.buffer.bytesForSpan(val);
@@ -314,30 +200,9 @@ const iccFormatter = (val: Span, png: Png) => {
     })} />
 };
 
-
 const bufferFormatter = (val: Span, png: Png) => {
-    const buffer = new DataView(png.buffer.bytesForSpan(val));
-    const fmt = (idx: number) => buffer.getUint8(idx).toString(16).padStart(2, "0")
-
-    const strs = []
-
-    for (let i = 0; i < buffer.byteLength; i += 1) {
-        strs.push(fmt(i));
-    }
-
-    if (buffer.byteLength > 4) {
-        const preview = `${fmt(0)} ${fmt(1)} ... ${fmt(buffer.byteLength - 2)} ${fmt(buffer.byteLength - 1)}`
-        return <HiddenBuffer monospaced preview={preview} buffer={`${strs.join(' ')}`} />
-    }
-
-    return `<${strs.join(' ')}>`
+    return <BufferFormatter span={val} _buffer={png.buffer} />
 };
-
-const textDecoder = new TextDecoder("utf-8");
-
-function bufferToString(buffer: Uint8Array | number[]): string {
-    return textDecoder.decode(new Uint8Array(buffer));
-}
 
 const compressedStringFormatter = (val: Span, png: Png) => {
     const compressed = png.buffer.bytesForSpan(val);
@@ -346,6 +211,78 @@ const compressedStringFormatter = (val: Span, png: Png) => {
 };
 
 type DisplayFunc = (val: any, png: Png, chunk: Chunk) => React.ReactNode
+
+interface ChunkDataFieldProps {
+    png: Png,
+    chunk: Chunk;
+    fieldName: string;
+    data: any;
+}
+
+export function ChunkDataField({ png, chunk, fieldName, data }: ChunkDataFieldProps) {
+    if (!fieldName) {
+        console.log({ chunk, fieldName })
+
+    }
+    const displayFunc = getDisplayFunc(chunk.name(), fieldName)
+    if (displayFunc) {
+        data = displayFunc(data, png, chunk);
+    } else {
+        data = JSON.stringify(data)
+    }
+
+    const hideKey = false; // Object.keys(chunk.parsedData ?? {}).length === 1 && data.type?.name === 'HiddenBuffer'
+
+    return <div style={{ marginBottom: 8, display: hideKey ? 'inline' : undefined }}>
+        <span style={{ fontWeight: 600 }}>{fieldName}</span>: {data}
+    </div>
+}
+
+export function PngDisplayer({ png }: { png: Png }) {
+    const idatChunks = png.chunks.filter(chunk => chunk.name() === 'IDAT');
+    const nonIdatChunks = png.chunks.filter(chunk => chunk.name() !== 'IDAT');
+
+    const [idatExpanded, setIdatExpanded] = React.useState(false)
+
+    const chunks = idatChunks && idatChunks?.length > 3 ? nonIdatChunks : png.chunks;
+
+    return <div>
+        <table>
+            <thead>
+                <tr>
+                    <th style={{ textAlign: 'left' }}>Chunk</th>
+                    <th style={{ textAlign: 'right', paddingRight: 16 }}>Size</th>
+                    <th style={{ textAlign: 'left' }}>Data</th>
+                </tr>
+            </thead>
+            <tbody>
+                {chunks?.map(chunk => {
+                    const isSingle = false; // Object.keys(chunk.parsedData ?? {}).length === 1
+                    const verticalAlign = isSingle ? 'middle' : "top";
+                    return <tr key={chunk.span.start + chunk.name()}>
+                        <td style={{ verticalAlign, textAlign: 'left' }}>{chunk.name()}</td>
+                        <td style={{ verticalAlign, textAlign: 'right', paddingRight: 16 }}>{chunk.size()} bytes</td>
+                        <td style={{ verticalAlign, textAlign: 'left', width: '80ch' }}>{Object.entries(chunk.parsedData ?? {}).map(([key, value]) => {
+                            return <ChunkDataField key={chunk.span.start + key} png={png} chunk={chunk} fieldName={key} data={value} />
+                        })}</td>
+                    </tr>
+                })}
+                {idatChunks && idatChunks?.length > 3 && <tr>
+                    <td colSpan={3} style={{ verticalAlign: "top", textAlign: 'center', padding: 32 }}><button onClick={() => setIdatExpanded(v => !v)}>{idatExpanded ? 'Hide' : 'Show'} IDAT</button></td>
+                </tr>}
+                {idatChunks && idatChunks?.length > 3 && idatExpanded && idatChunks?.map(chunk => {
+                    return <tr>
+                        <td style={{ verticalAlign: "top", textAlign: 'left' }}>{chunk.name()}</td>
+                        <td style={{ verticalAlign: "top", textAlign: 'right', paddingRight: 16 }}>{chunk.size()} bytes</td>
+                        <td style={{ verticalAlign: "top", textAlign: 'left', width: '80ch' }}>{Object.entries(chunk.parsedData ?? {}).map(([key, value]) => {
+                            return <ChunkDataField png={png} chunk={chunk} fieldName={key} data={value} />
+                        })}</td>
+                    </tr>
+                })}
+            </tbody>
+        </table>
+    </div>
+}
 
 // typeof CHUNK_DEFINITIONS[k][m]
 const CHUNK_DISPLAY_DEFINITIONS: Partial<{ [k in keyof typeof CHUNK_DEFINITIONS]:

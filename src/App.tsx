@@ -1,9 +1,9 @@
 import React, { ChangeEvent } from 'react'
 import './App.css'
-import { Chunk, Png, PngParser } from './parse/png'
-import { getDisplayFunc, } from './display/png'
+import { Png, PngParser } from './parse/png'
+import { PngDisplayer, } from './display/png'
 import { Gif, GifImageDecoder, GifParser } from './parse/gif';
-import { GifDisplayer } from './display/gif-display';
+import { GifDisplayer } from './display/gif';
 
 function createCanvasFromRGBAData(data: number[][], width: number, height: number, canvas: HTMLCanvasElement) {
   if (width * height !== data.length) throw new Error("width*height should equal data.length");
@@ -22,33 +22,6 @@ function createCanvasFromRGBAData(data: number[][], width: number, height: numbe
   }
   ctx.putImageData(imgData, 0, 0);
   return canvas;
-}
-
-
-interface ChunkDataFieldProps {
-  png: Png,
-  chunk: Chunk;
-  fieldName: string;
-  data: any;
-}
-
-function ChunkDataField({ png, chunk, fieldName, data }: ChunkDataFieldProps) {
-  if (!fieldName) {
-    console.log({ chunk, fieldName })
-
-  }
-  const displayFunc = getDisplayFunc(chunk.name(), fieldName)
-  if (displayFunc) {
-    data = displayFunc(data, png, chunk);
-  } else {
-    data = JSON.stringify(data)
-  }
-
-  const hideKey = false; // Object.keys(chunk.parsedData ?? {}).length === 1 && data.type?.name === 'HiddenBuffer'
-
-  return <div style={{ marginBottom: 8, display: hideKey ? 'inline' : undefined }}>
-    <span style={{ fontWeight: 600 }}>{fieldName}</span>: {data}
-  </div>
 }
 
 function App() {
@@ -105,13 +78,6 @@ function App() {
     return () => dropZone.removeEventListener('drop', dropCb);
   }, [inputRef.current])
 
-  const idatChunks = png?.chunks.filter(chunk => chunk.name() === 'IDAT');
-  const nonIdatChunks = png?.chunks.filter(chunk => chunk.name() !== 'IDAT');
-
-  const [idatExpanded, setIdatExpanded] = React.useState(false)
-
-  const chunks = idatChunks && idatChunks?.length > 3 ? nonIdatChunks : png?.chunks;
-
   const canvasRef = React.useRef(null)
 
   React.useEffect(() => {
@@ -156,43 +122,7 @@ function App() {
         {imageSource && <img src={imageSource} height={75} style={{ marginLeft: 8 }} />}
       </div>
       {gif && <GifDisplayer gif={gif} />}
-      {png &&
-        <div>
-          <table>
-            <thead>
-              <tr>
-                <th style={{ textAlign: 'left' }}>Chunk</th>
-                <th style={{ textAlign: 'right', paddingRight: 16 }}>Size</th>
-                <th style={{ textAlign: 'left' }}>Data</th>
-              </tr>
-            </thead>
-            <tbody>
-              {chunks?.map(chunk => {
-                const isSingle = false; // Object.keys(chunk.parsedData ?? {}).length === 1
-                const verticalAlign = isSingle ? 'middle' : "top";
-                return <tr key={chunk.span.start + chunk.name()}>
-                  <td style={{ verticalAlign, textAlign: 'left' }}>{chunk.name()}</td>
-                  <td style={{ verticalAlign, textAlign: 'right', paddingRight: 16 }}>{chunk.size()} bytes</td>
-                  <td style={{ verticalAlign, textAlign: 'left', width: '80ch' }}>{Object.entries(chunk.parsedData ?? {}).map(([key, value]) => {
-                    return <ChunkDataField key={chunk.span.start + key} png={png} chunk={chunk} fieldName={key} data={value} />
-                  })}</td>
-                </tr>
-              })}
-              {idatChunks && idatChunks?.length > 3 && <tr>
-                <td colSpan={3} style={{ verticalAlign: "top", textAlign: 'center', padding: 32 }}><button onClick={() => setIdatExpanded(v => !v)}>{idatExpanded ? 'Hide' : 'Show'} IDAT</button></td>
-              </tr>}
-              {idatChunks && idatChunks?.length > 3 && idatExpanded && idatChunks?.map(chunk => {
-                return <tr>
-                  <td style={{ verticalAlign: "top", textAlign: 'left' }}>{chunk.name()}</td>
-                  <td style={{ verticalAlign: "top", textAlign: 'right', paddingRight: 16 }}>{chunk.size()} bytes</td>
-                  <td style={{ verticalAlign: "top", textAlign: 'left', width: '80ch' }}>{Object.entries(chunk.parsedData ?? {}).map(([key, value]) => {
-                    return <ChunkDataField png={png} chunk={chunk} fieldName={key} data={value} />
-                  })}</td>
-                </tr>
-              })}
-            </tbody>
-          </table>
-        </div>}
+      {png && <PngDisplayer png={png} />}
     </>
   )
 }
