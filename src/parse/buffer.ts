@@ -5,7 +5,7 @@ export interface Span {
 
 const textDecoder = new TextDecoder("utf-8");
 
-export function bufferToString(buffer: Uint8Array | number[]): string {
+export function bufferToString(buffer: Uint8Array | number[] | ArrayBufferLike): string {
     return textDecoder.decode(new Uint8Array(buffer));
 }
 

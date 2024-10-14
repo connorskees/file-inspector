@@ -37,17 +37,18 @@ function App() {
     setImageSource(URL.createObjectURL(file));
     const buffer = await file.arrayBuffer()
 
+    setPng(null)
+    setGif(null)
+
     if (file.type === "image/gif") {
       const parser = new GifParser(new Uint8Array(buffer))
       const gif = parser.parse()
       setGif(gif)
-      setPng(null)
     }
 
     if (file.type === "image/png") {
       const parser = new PngParser(new Uint8Array(buffer))
       setPng(parser.parse());
-      setGif(null)
     }
   }, [])
 

@@ -183,6 +183,10 @@ const exifFormatter = (val: Span, png: Png) => {
     const parser = new ExifParser(new Uint8Array(buffer));
     const { fields } = parser.parse()
 
+    if (fields.length === 0) {
+        return <>(empty)</>
+    }
+
     return <HiddenBuffer buffer={fields.map((field) => {
         return <ExifValue field={field} />
     })} />
