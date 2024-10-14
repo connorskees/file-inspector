@@ -1,1 +1,1 @@
-Simple site for inspecting the contents of PNG files. Parses ICCP and EXIF metadata. 
+Simple site for inspecting the contents of PNG and GIF files. Parses ICCP and EXIF metadata. 
