@@ -1,6 +1,10 @@
 // Copyright 2015 Lovell Fuller and others.
 // SPDX-License-Identifier: Apache-2.0
 
+// Lightly ported from https://github.com/lovell/icc
+//
+// Modified in order to support browser environments
+
 'use strict';
 
 const textDecoder = new TextDecoder("utf-8");

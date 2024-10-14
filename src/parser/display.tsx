@@ -30,8 +30,18 @@ enum RenderingIntent {
     absolute_colorimetric = 3,
 }
 
-export function HiddenBuffer({ buffer, preview, monospaced }: { buffer: React.ReactNode, preview?: string, monospaced?: boolean }) {
+interface HiddenBufferProps {
+    buffer: React.ReactNode,
+    preview?: string,
+    monospaced?: boolean
+    onFirstShow?: () => void
+    showButtonText?: string
+    hideButtonText?: string
+}
+
+export function HiddenBuffer({ buffer, preview, monospaced, onFirstShow, showButtonText, hideButtonText }: HiddenBufferProps) {
     const [showingBuffer, setShowingBuffer] = React.useState(false)
+    const [hasShown, setHasShown] = React.useState(false)
 
     if (typeof buffer === 'string' && buffer.length < 50) {
         return buffer;
@@ -41,8 +51,14 @@ export function HiddenBuffer({ buffer, preview, monospaced }: { buffer: React.Re
 
     return <>
         {preview && <span style={{ marginRight: 8 }}>&lt;<span style={{ fontFamily }}>{preview}</span>&gt;</span>}
-        <button onClick={() => setShowingBuffer(v => !v)}>
-            {showingBuffer ? 'hide' : 'show'}
+        <button onClick={() => {
+            if (!hasShown) {
+                setHasShown(true)
+                onFirstShow?.()
+            }
+            setShowingBuffer(v => !v)
+        }}>
+            {showingBuffer ? (hideButtonText ?? 'hide') : (showButtonText ?? 'show')}
         </button>
         <br />
         <div style={{ fontFamily, maxWidth: '80ch' }}>
@@ -173,7 +189,7 @@ const bkgdFormatter = (val: Span, png: Png) => {
     }
 };
 
-function ColorPreview({ color, name }: { color: string; name: string }) {
+export function ColorPreview({ color, name }: { color: string; name: string }) {
     return <div style={{ display: 'flex', alignItems: 'center', fontFamily: "monospace" }}>
         <div style={{ width: 8, height: 8, background: color, marginRight: 8 }}></div>
         {name}

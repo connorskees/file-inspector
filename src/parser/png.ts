@@ -28,6 +28,7 @@ export class PngParser {
     }
 
     parseChunk(): Chunk {
+        const start = this.buffer.index;
         const length = this.buffer.readU32();
         const name = this.readChunkName();
         const nameStr = chunkNameToString(name);
@@ -40,17 +41,15 @@ export class PngParser {
 
         const rawData = this.buffer.getSpan(length);
         const crc = this.buffer.readU32();
+        const end = this.buffer.index;
 
         return new Chunk(
             name,
             rawData,
             crc,
+            { start, end },
             parsedData,
         )
-    }
-
-    parseIHDR() {
-
     }
 
     parseChunkDefinition(definition: Record<string, ChunkFieldKind>, chunkEnd: number) {
@@ -107,6 +106,7 @@ export class Chunk {
         private readonly _name: ChunkName,
         readonly rawData: Span,
         readonly crc: number,
+        readonly span: Span,
         readonly parsedData?: Record<string, PngFieldValue>,
     ) { }
 
