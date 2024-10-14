@@ -1,7 +1,7 @@
 import React from 'react'
-import { ColorTable, Extension, Gif, GifImageDecoder, Image } from './gif'
-import { ColorPreview, HiddenBuffer } from './display';
-import { BufferParser, Span } from './buffer';
+import { ColorTable, Extension, Gif, GifImageDecoder, Image } from '../parse/gif'
+import { ColorPreview, HiddenBuffer } from './png';
+import { BufferParser, Span } from '../parse/buffer';
 
 // const GIF_CHUNK_DEFINITIONS = {
 //     global_color_table: (gif: Gif) => ({

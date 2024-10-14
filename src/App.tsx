@@ -1,9 +1,9 @@
 import React, { ChangeEvent } from 'react'
 import './App.css'
-import { Chunk, Png, PngParser } from './parser/png'
-import { getDisplayFunc, } from './parser/display'
-import { Gif, GifImageDecoder, GifParser } from './parser/gif';
-import { GifDisplayer } from './parser/gif-display';
+import { Chunk, Png, PngParser } from './parse/png'
+import { getDisplayFunc, } from './display/png'
+import { Gif, GifImageDecoder, GifParser } from './parse/gif';
+import { GifDisplayer } from './display/gif-display';
 
 function createCanvasFromRGBAData(data: number[][], width: number, height: number, canvas: HTMLCanvasElement) {
   if (width * height !== data.length) throw new Error("width*height should equal data.length");

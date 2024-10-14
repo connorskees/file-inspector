@@ -1,9 +1,9 @@
 import React from "react";
 import pako from 'pako';
-import { Span } from "./buffer";
-import { Chunk, CHUNK_DEFINITIONS, Png } from "./png";
-import { ExifField, ExifParser } from "./exif";
-import { parse as iccParse } from './iccp';
+import { Span } from "../parse/buffer";
+import { Chunk, CHUNK_DEFINITIONS, Png } from "../parse/png";
+import { ExifField, ExifParser } from "../parse/exif";
+import { parse as iccParse } from '../parse/iccp';
 
 enum InterlaceMethod {
     none = 0,
