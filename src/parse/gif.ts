@@ -363,11 +363,8 @@ export class GifImageDecoder {
 
         const nextCode = () => input.readNBits(Math.min(width, MAX_LWZ_CODE_WIDTH));
 
-        // code to elements
         let codeTable: number[][] = []
-
-        // out array
-        let indexStream: number[] = []
+        const indexStream: number[] = []
 
         const clearCode = nextCode();
         const endCode = clearCode + 1

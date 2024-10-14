@@ -18,7 +18,7 @@ const formatBinaryByte = (v: number) => {
     return '0b' + str.slice(0, 4) + '_' + str.slice(4)
 }
 
-const JSON_FORMATTER_OVERRIDES: Record<string, (v: any, gif: Gif) => string> = {
+const JSON_FORMATTER_OVERRIDES: Record<string, (v: any, gif: Gif, image?: Image) => string> = {
     width: (v) => `${v}px`,
     height: (v) => `${v}px`,
     top: (v) => `${v}px`,
