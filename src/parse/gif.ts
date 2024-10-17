@@ -415,7 +415,7 @@ export class GifImageDecoder {
         }
 
         if (!input.atEnd()) {
-            throw new Error(`end code not at end ${input.buffer.length} ${input.cursor}`)
+            throw new Error(`end code not at end ${input.buffer.length * 8} ${input.cursor}`)
         }
 
         return indexStream

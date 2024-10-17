@@ -146,6 +146,7 @@ export function GifDisplayer({ gif }: { gif: Gif }) {
                     </tr>
                 </thead>
                 <tbody>
+                    <GifChunkRow title="Header" span={gif.header} body={bufferToString(gif.buffer.bytesForSpan(gif.header))} gif={gif} />
                     <GifChunkRow title="Logical Screen Descriptor" span={gif.logicalScreenDescriptor.span} body={<JsonDisplayer fields={gif.logicalScreenDescriptor} gif={gif} />} gif={gif} />
                     {gif.globalColorTable && <ColorTableDisplayer gif={gif} table={gif.globalColorTable} title={"Global Color Table"} />}
                     {gif.images.map((image, idx) => {

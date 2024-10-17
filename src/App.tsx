@@ -2,7 +2,7 @@ import React, { ChangeEvent } from 'react'
 import './App.css'
 import { Png, PngParser } from './parse/png'
 import { PngDisplayer, } from './display/png'
-import { Gif, GifImageDecoder, GifParser, Image } from './parse/gif';
+import { Gif, GifImageDecoder, GifParser } from './parse/gif';
 import { GifDisplayer } from './display/gif';
 
 function createCanvasFromRGBAData(data: number[][], width: number, height: number, canvas: HTMLCanvasElement) {
@@ -24,7 +24,7 @@ function createCanvasFromRGBAData(data: number[][], width: number, height: numbe
   return canvas;
 }
 
-function GifFrame({ gif, image }: { gif: Gif, image: Image }) {
+function GifFrame({ gif }: { gif: Gif }) {
   const canvasRef = React.useRef(null);
 
 
@@ -34,27 +34,40 @@ function GifFrame({ gif, image }: { gif: Gif, image: Image }) {
         return;
       }
 
-      const decoder = new GifImageDecoder(gif, image)
-      const gce = image.extensions.find((ext) => ext.kind === "graphics")
-      const transparentColorIndex: number | undefined = gce?.transparentColorIndex
-      const colorTable = image.localColorTable?.colors ?? gif.globalColorTable?.colors;
-      const pixels = decoder.decode().map(idx => {
-        // todo: likely bogus
-        if (idx === transparentColorIndex) {
-          return [0, 0, 0, 0]
-        }
-        const color = colorTable?.[idx]
-        if (color === undefined) {
-          console.error('color index oob', idx)
-        }
-        return color ?? [255, 0, 0, 255]
-      })
+      while (true) {
+        let frame = Array(gif.logicalScreenDescriptor.width * gif.logicalScreenDescriptor.height).fill([0, 0, 0, 0]);
 
-      createCanvasFromRGBAData(pixels, image.descriptor.width, image.descriptor.height, canvasRef.current)
-      await new Promise(r => setTimeout(r, 110));
+        for (const image of gif.images) {
+          const decoder = new GifImageDecoder(gif, image)
+          const gce = image.extensions.find((ext) => ext.kind === "graphics")
+          const transparentColorIndex: number | undefined = gce?.transparentColorIndex
+          const colorTable = image.localColorTable?.colors ?? gif.globalColorTable?.colors;
+          decoder.decode().map((idx, pixelidx) => {
+            // todo: likely bogus
+            if (idx === transparentColorIndex) {
+              // frame[pixelidx] = [0, 0, 0, 0]
+              return;
+            }
+            const color = colorTable?.[idx]
+            if (color === undefined) {
+              console.error('color index oob', idx)
+            }
+
+            frame[pixelidx] = color ?? [255, 0, 0, 255];
+
+            return color ?? [255, 0, 0, 255]
+          })
+
+          createCanvasFromRGBAData(frame, image.descriptor.width, image.descriptor.height, canvasRef.current)
+          await new Promise(r => setTimeout(r, (gce?.delayTime ?? 0) * 10));
+          // break;
+        }
+        await new Promise(r => setTimeout(r, 5000));
+      }
+
 
     })()
-  }, [gif, image, canvasRef])
+  }, [gif, canvasRef])
 
 
   return <canvas ref={canvasRef}></canvas>
@@ -63,6 +76,7 @@ function GifFrame({ gif, image }: { gif: Gif, image: Image }) {
 function App() {
   const [png, setPng] = React.useState<Png | null>(null);
   const [gif, setGif] = React.useState<Gif | null>(null);
+  const [fileName, setFileName] = React.useState<string | null>(null);
   const [imageSource, setImageSource] = React.useState<string | undefined>();
 
   const cb = React.useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
@@ -75,6 +89,8 @@ function App() {
 
     setPng(null)
     setGif(null)
+
+    setFileName(file.name);
 
     if (file.type === "image/gif") {
       const parser = new GifParser(new Uint8Array(buffer))
@@ -92,7 +108,6 @@ function App() {
 
   React.useEffect(() => {
     const dropZone = document.querySelector('body');
-
 
     if (!dropZone) {
       return;
@@ -119,13 +134,13 @@ function App() {
 
   return (
     <>
-      {f && gif && gif.images.map(img => <GifFrame gif={gif} image={img} />)}
+      {f && gif && <GifFrame gif={gif} />}
       <div style={{ display: 'flex' }}>
         <input type="file" accept="image/*" onChange={cb} ref={inputRef} />
         {imageSource && <img src={imageSource} height={75} style={{ marginLeft: 8 }} />}
       </div>
-      {gif && <GifDisplayer gif={gif} />}
-      {png && <PngDisplayer png={png} />}
+      {gif && <GifDisplayer key={fileName} gif={gif} />}
+      {png && <PngDisplayer key={fileName} png={png} />}
     </>
   )
 }

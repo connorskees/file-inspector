@@ -109,8 +109,8 @@ export class BitParser {
     constructor(public buffer: Uint8Array, public cursor = 0) { }
 
     atEnd(): boolean {
-        const byteIdx = Math.ceil(this.cursor / 8);
-        return this.buffer.byteLength <= byteIdx;
+        const last = this.readNBits(this.buffer.byteLength * 8 - this.cursor)
+        return last === 0;
     }
 
     readNBits(bits: number): number {
