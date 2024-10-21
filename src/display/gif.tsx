@@ -1,7 +1,7 @@
 import React from 'react'
 import { GifColorTable, Extension, Gif, GifImageDecoder, Image, GraphicsControlExtension, LogicalScreenDescriptor } from '../parse/gif'
 import { bufferToString, Span } from '../parse/buffer';
-import { BufferFormatter, HiddenBuffer, ColorPreview, enumFormatter } from './shared';
+import { BufferFormatter, HiddenBuffer, ColorPreview, enumFormatter, byteFormatter } from './shared';
 
 const DISPOSAL_METHODS = {
     0: "unspecified/not animated",
@@ -49,7 +49,7 @@ const JSON_FORMATTER_OVERRIDES: Record<string, (v: any, gif: Gif, extra: any, im
     bitflags: formatBinaryByte,
     descriptor: formatBinaryByte,
     delayTime: (v: number) => `${v * 10}ms`,
-    blockSize: (v: number) => `${v} bytes`,
+    blockSize: byteFormatter,
     text: bufferToString,
     comment: bufferToString,
     netscapeVersion: (v: Span, gif: Gif) => bufferToString(gif.buffer.bytesForSpan(v)),
@@ -65,9 +65,10 @@ interface GifChunkRowProps {
 }
 
 function GifChunkRow({ title, span, body, gif }: GifChunkRowProps) {
+    const chunkSize = byteFormatter(span.end - span.start);
     return <tr>
         <td style={{ verticalAlign: 'top', textAlign: 'left' }}>{title}</td>
-        <td style={{ verticalAlign: 'top', textAlign: 'right', paddingRight: 16 }}>{span.end - span.start}</td>
+        <td style={{ verticalAlign: 'top', textAlign: 'right', paddingRight: 16 }}>{chunkSize}</td>
         <td style={{ verticalAlign: 'top', textAlign: 'left', width: '48ch' }}>{body}</td>
         <td style={{ verticalAlign: 'top', textAlign: 'left', width: '48ch' }}><BufferFormatter span={span} _buffer={gif.buffer} /></td>
     </tr>

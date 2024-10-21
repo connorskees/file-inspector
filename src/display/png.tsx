@@ -5,7 +5,7 @@ import { Chunk, CHUNK_DEFINITIONS, Png } from "../parse/png";
 import { ExifParser } from "../parse/exif";
 import { parse as iccParse } from '../parse/iccp';
 import { ExifValue, ORIENTATION } from "./exif";
-import { enumFormatter } from "./shared";
+import { byteFormatter, enumFormatter } from "./shared";
 import { BufferFormatter, HiddenBuffer, ColorPreview } from './shared';
 
 enum InterlaceMethod {
@@ -263,9 +263,10 @@ export function PngDisplayer({ png }: { png: Png }) {
                 {chunks?.map(chunk => {
                     const isSingle = false; // Object.keys(chunk.parsedData ?? {}).length === 1
                     const verticalAlign = isSingle ? 'middle' : "top";
+                    const chunkSize = byteFormatter(chunk.size());
                     return <tr key={chunk.span.start + chunk.name()}>
                         <td style={{ verticalAlign, textAlign: 'left' }}>{chunk.name()}</td>
-                        <td style={{ verticalAlign, textAlign: 'right', paddingRight: 16 }}>{chunk.size()} bytes</td>
+                        <td style={{ verticalAlign, textAlign: 'right', paddingRight: 16 }}>{chunkSize}</td>
                         <td style={{ verticalAlign, textAlign: 'left', width: '80ch' }}>{Object.entries(chunk.parsedData ?? {}).map(([key, value]) => {
                             return <ChunkDataField key={chunk.span.start + key} png={png} chunk={chunk} fieldName={key} data={value} />
                         })}</td>
@@ -275,9 +276,10 @@ export function PngDisplayer({ png }: { png: Png }) {
                     <td colSpan={3} style={{ verticalAlign: "top", textAlign: 'center', padding: 32 }}><button onClick={() => setIdatExpanded(v => !v)}>{idatExpanded ? 'Hide' : 'Show'} IDAT</button></td>
                 </tr>}
                 {idatChunks && idatChunks?.length > 3 && idatExpanded && idatChunks?.map(chunk => {
+                    const chunkSize = byteFormatter(chunk.size());
                     return <tr>
                         <td style={{ verticalAlign: "top", textAlign: 'left' }}>{chunk.name()}</td>
-                        <td style={{ verticalAlign: "top", textAlign: 'right', paddingRight: 16 }}>{chunk.size()} bytes</td>
+                        <td style={{ verticalAlign: "top", textAlign: 'right', paddingRight: 16 }}>{chunkSize}</td>
                         <td style={{ verticalAlign: "top", textAlign: 'left', width: '80ch' }}>{Object.entries(chunk.parsedData ?? {}).map(([key, value]) => {
                             return <ChunkDataField png={png} chunk={chunk} fieldName={key} data={value} />
                         })}</td>

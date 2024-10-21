@@ -5,6 +5,8 @@ export function enumFormatter(en: Record<number, string>) {
     return (val: number) => `${en[val] ?? 'unrecognized value'} (${val})`;
 }
 
+export const byteFormatter = (v: number) => v === 1 ? '1 byte' : `${v} bytes`;
+
 interface HiddenBufferProps {
     buffer: React.ReactNode,
     preview?: string,
