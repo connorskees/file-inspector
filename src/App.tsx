@@ -26,7 +26,7 @@ function createCanvasFromRGBAData(data: number[][], width: number, height: numbe
   return canvas;
 }
 
-function GifFrame({ gif, image }: { gif: Gif, image?: Image }) {
+export function GifFrame({ gif, image }: { gif: Gif, image?: Image }) {
   const canvasRef = React.useRef(null);
 
 
@@ -76,10 +76,13 @@ function GifFrame({ gif, image }: { gif: Gif, image?: Image }) {
   return <canvas ref={canvasRef}></canvas>
 }
 
+type File =
+  { kind: "png", file: Png }
+  | { kind: "gif", file: Gif }
+  | { kind: "zip", file: ZipFile }
+
 function App() {
-  const [png, setPng] = React.useState<Png | null>(null);
-  const [gif, setGif] = React.useState<Gif | null>(null);
-  const [zip, setZip] = React.useState<ZipFile | null>(null);
+  const [file, setFile] = React.useState<File | null>(null);
   const [fileName, setFileName] = React.useState<string | null>(null);
   const [imageSource, setImageSource] = React.useState<string | undefined>();
 
@@ -91,26 +94,23 @@ function App() {
     setImageSource(URL.createObjectURL(file));
     const buffer = await file.arrayBuffer()
 
-    setPng(null)
-    setGif(null)
-    setZip(null)
-
+    setFile(null)
     setFileName(file.name);
 
     if (file.type === "image/gif") {
       const parser = new GifParser(new Uint8Array(buffer))
       const gif = parser.parse()
-      setGif(gif)
+      setFile({ kind: "gif", file: gif });
     }
 
     if (file.type === "image/png") {
       const parser = new PngParser(new Uint8Array(buffer))
-      setPng(parser.parse());
+      setFile({ kind: "png", file: parser.parse() });
     }
 
     if (file.type === "application/zip") {
       const parser = new ZipParser(new Uint8Array(buffer))
-      setZip(parser.parse())
+      setFile({ kind: "zip", file: parser.parse() });
       setImageSource(undefined);
     }
   }, [])
@@ -147,9 +147,11 @@ function App() {
         <input type="file" accept="image/*" onChange={cb} ref={inputRef} />
         {imageSource && <img src={imageSource} height={75} style={{ marginLeft: 8 }} />}
       </div>
-      {gif && <GifDisplayer key={fileName} gif={gif} />}
-      {png && <PngDisplayer key={fileName} png={png} />}
-      {zip && <ZipDisplayer key={fileName} zip={zip} />}
+      {file?.file && <>
+        {file.kind === "gif" && <GifDisplayer key={fileName} gif={file.file} />}
+        {file.kind === "png" && <PngDisplayer key={fileName} png={file.file} />}
+        {file.kind === "zip" && <ZipDisplayer key={fileName} zip={file.file} />}
+      </>}
     </>
   )
 }

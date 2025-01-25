@@ -1,4 +1,3 @@
-import React from 'react'
 import { CentralDirectoryFileHeader, ZipFile } from '../parse/zip'
 import { enumFormatter } from './shared';
 import './zip.scss';
