@@ -2,8 +2,10 @@ import React, { ChangeEvent } from 'react'
 import './App.css'
 import { Png, PngParser } from './parse/png'
 import { PngDisplayer, } from './display/png'
-import { Gif, GifImageDecoder, GifParser } from './parse/gif';
+import { Gif, GifImageDecoder, GifParser, Image } from './parse/gif';
 import { GifDisplayer } from './display/gif';
+import { ZipFile, ZipParser } from './parse/zip';
+import { ZipDisplayer } from './display/zip';
 
 function createCanvasFromRGBAData(data: number[][], width: number, height: number, canvas: HTMLCanvasElement) {
   if (width * height !== data.length) throw new Error("width*height should equal data.length");
@@ -24,7 +26,7 @@ function createCanvasFromRGBAData(data: number[][], width: number, height: numbe
   return canvas;
 }
 
-function GifFrame({ gif }: { gif: Gif }) {
+function GifFrame({ gif, image }: { gif: Gif, image?: Image }) {
   const canvasRef = React.useRef(null);
 
 
@@ -34,10 +36,12 @@ function GifFrame({ gif }: { gif: Gif }) {
         return;
       }
 
+      const images = image ? [image] : gif.images;
+
       while (true) {
         let frame = Array(gif.logicalScreenDescriptor.width * gif.logicalScreenDescriptor.height).fill([0, 0, 0, 0]);
 
-        for (const image of gif.images) {
+        for (const image of images) {
           const decoder = new GifImageDecoder(gif, image)
           const gce = image.extensions.find((ext) => ext.kind === "graphics")
           const transparentColorIndex: number | undefined = gce?.transparentColorIndex
@@ -60,7 +64,6 @@ function GifFrame({ gif }: { gif: Gif }) {
 
           createCanvasFromRGBAData(frame, image.descriptor.width, image.descriptor.height, canvasRef.current)
           await new Promise(r => setTimeout(r, (gce?.delayTime ?? 0) * 10));
-          // break;
         }
         await new Promise(r => setTimeout(r, 5000));
       }
@@ -76,6 +79,7 @@ function GifFrame({ gif }: { gif: Gif }) {
 function App() {
   const [png, setPng] = React.useState<Png | null>(null);
   const [gif, setGif] = React.useState<Gif | null>(null);
+  const [zip, setZip] = React.useState<ZipFile | null>(null);
   const [fileName, setFileName] = React.useState<string | null>(null);
   const [imageSource, setImageSource] = React.useState<string | undefined>();
 
@@ -89,6 +93,7 @@ function App() {
 
     setPng(null)
     setGif(null)
+    setZip(null)
 
     setFileName(file.name);
 
@@ -101,6 +106,12 @@ function App() {
     if (file.type === "image/png") {
       const parser = new PngParser(new Uint8Array(buffer))
       setPng(parser.parse());
+    }
+
+    if (file.type === "application/zip") {
+      const parser = new ZipParser(new Uint8Array(buffer))
+      setZip(parser.parse())
+      setImageSource(undefined);
     }
   }, [])
 
@@ -130,17 +141,15 @@ function App() {
     return () => dropZone.removeEventListener('drop', dropCb);
   }, [inputRef.current])
 
-  const f = false;
-
   return (
     <>
-      {f && gif && <GifFrame gif={gif} />}
       <div style={{ display: 'flex' }}>
         <input type="file" accept="image/*" onChange={cb} ref={inputRef} />
         {imageSource && <img src={imageSource} height={75} style={{ marginLeft: 8 }} />}
       </div>
       {gif && <GifDisplayer key={fileName} gif={gif} />}
       {png && <PngDisplayer key={fileName} png={png} />}
+      {zip && <ZipDisplayer key={fileName} zip={zip} />}
     </>
   )
 }

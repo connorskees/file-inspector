@@ -10,7 +10,7 @@ export function bufferToString(buffer: Uint8Array | number[] | ArrayBufferLike):
 }
 
 export class BufferParser {
-    private buffer: DataView;
+    public buffer: DataView;
     constructor(_buffer: Uint8Array, public littleEndian: boolean = false, public index = 0) {
         this.buffer = new DataView(_buffer.buffer)
     }
@@ -102,6 +102,22 @@ export class BufferParser {
         }
 
         return { start, end }
+    }
+
+    consumeIfEquals(bytes: number[]): boolean {
+        if (bytes.length + this.index >= this.buffer.byteLength) {
+            return false;
+        }
+
+        for (let i = 0; i < bytes.length; i += 1) {
+            if (bytes[i] !== this.buffer.getUint8(this.index + i)) {
+                return false;
+            }
+        }
+
+        this.index += bytes.length;
+
+        return true;
     }
 }
 

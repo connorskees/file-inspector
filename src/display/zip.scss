@@ -1,0 +1,13 @@
+.zip {
+    td {
+        text-align: left;
+
+        &:first-child {
+            padding-right: 24px;
+        }
+    }
+
+    tr:last-child {
+        margin-bottom: 8px;
+    }
+}
