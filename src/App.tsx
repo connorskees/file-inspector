@@ -2,10 +2,12 @@ import React, { ChangeEvent } from 'react'
 import './App.css'
 import { Png, PngParser } from './parse/png'
 import { PngDisplayer, } from './display/png'
-import { Gif, GifImageDecoder, GifParser, Image } from './parse/gif';
+import { Gif, GifImageDecoder, GifParser, GifImage } from './parse/gif';
 import { GifDisplayer } from './display/gif';
 import { ZipFile, ZipParser } from './parse/zip';
 import { ZipDisplayer } from './display/zip';
+import { Bmp, BmpParser } from './parse/bmp';
+import { BmpDisplayer } from './display/bmp';
 
 function createCanvasFromRGBAData(data: number[][], width: number, height: number, canvas: HTMLCanvasElement) {
   if (width * height !== data.length) throw new Error("width*height should equal data.length");
@@ -26,9 +28,8 @@ function createCanvasFromRGBAData(data: number[][], width: number, height: numbe
   return canvas;
 }
 
-export function GifFrame({ gif, image }: { gif: Gif, image?: Image }) {
+export function GifFrame({ gif, image }: { gif: Gif, image?: GifImage }) {
   const canvasRef = React.useRef(null);
-
 
   React.useEffect(() => {
     (async () => {
@@ -80,13 +81,14 @@ type File =
   { kind: "png", file: Png }
   | { kind: "gif", file: Gif }
   | { kind: "zip", file: ZipFile }
+  | { kind: "bmp", file: Bmp }
 
 function App() {
   const [file, setFile] = React.useState<File | null>(null);
   const [fileName, setFileName] = React.useState<string | null>(null);
   const [imageSource, setImageSource] = React.useState<string | undefined>();
 
-  const cb = React.useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = React.useCallback(async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) {
       return;
@@ -108,7 +110,18 @@ function App() {
       setFile({ kind: "png", file: parser.parse() });
     }
 
-    if (file.type === "application/zip") {
+    console.log({ type: file.type })
+
+    if (file.type === "image/bmp" || file.type === "image/x-ms-bmp") {
+      const parser = new BmpParser(new Uint8Array(buffer))
+      setFile({ kind: "bmp", file: parser.parse() });
+    }
+
+    if (file.type === "image/vnd.microsoft.icon" || file.type === "image/x-icon") {
+      // .ico
+    }
+
+    if (file.type === "application/zip" || file.type === "application/java-archive") {
       const parser = new ZipParser(new Uint8Array(buffer))
       setFile({ kind: "zip", file: parser.parse() });
       setImageSource(undefined);
@@ -128,7 +141,7 @@ function App() {
       if (inputRef.current) {
         inputRef.current.files = e.dataTransfer.files;
         e.preventDefault()
-        cb({ target: inputRef.current } as any)
+        handleFileChange({ target: inputRef.current } as any)
       }
     };
 
@@ -144,12 +157,13 @@ function App() {
   return (
     <>
       <div style={{ display: 'flex' }}>
-        <input type="file" accept="image/*" onChange={cb} ref={inputRef} />
+        <input type="file" accept="*" onChange={handleFileChange} ref={inputRef} />
         {imageSource && <img src={imageSource} height={75} style={{ marginLeft: 8 }} />}
       </div>
       {file?.file && <>
         {file.kind === "gif" && <GifDisplayer key={fileName} gif={file.file} />}
         {file.kind === "png" && <PngDisplayer key={fileName} png={file.file} />}
+        {file.kind === "bmp" && <BmpDisplayer key={fileName} bmp={file.file} />}
         {file.kind === "zip" && <ZipDisplayer key={fileName} zip={file.file} />}
       </>}
     </>

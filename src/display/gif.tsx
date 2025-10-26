@@ -1,7 +1,7 @@
 import React from 'react'
-import { GifColorTable, Extension, Gif, GifImageDecoder, Image, GraphicsControlExtension, LogicalScreenDescriptor } from '../parse/gif'
+import { Extension, Gif, GifImageDecoder, GifImage, GraphicsControlExtension, LogicalScreenDescriptor } from '../parse/gif'
 import { bufferToString, Span } from '../parse/buffer';
-import { BufferFormatter, HiddenBuffer, ColorPreview, enumFormatter, byteFormatter } from './shared';
+import { BufferFormatter, HiddenBuffer, ColorPreview, enumFormatter, byteLengthFormatter, binaryByteFormatter, hexFormatter, stringFormatter, pxFormatter, ColorTableDisplayer } from './shared';
 
 const DISPOSAL_METHODS = {
     0: "unspecified/not animated",
@@ -10,15 +10,7 @@ const DISPOSAL_METHODS = {
     3: "restore to previous state"
 }
 
-const formatBinaryByte = (v: number) => {
-    if (v > 255) {
-        throw new Error('attempted to display byte > 255')
-    }
-    const str = v.toString(2).padStart(8, '0');
-    return '0b' + str.slice(0, 4) + '_' + str.slice(4)
-}
-
-function transparentColorIndexFormatter(v: number, gif: Gif, extra: GraphicsControlExtension, image?: Image) {
+function transparentColorIndexFormatter(v: number, gif: Gif, extra: GraphicsControlExtension, image?: GifImage) {
     const colorTable = image?.localColorTable ?? gif.globalColorTable;
     if (!colorTable || !extra.hasTransparentColor || !image) {
         return v;
@@ -39,20 +31,20 @@ function backgroundColorIndexFormatter(v: number, gif: Gif, extra: LogicalScreen
     return <ColorPreview inline color={`rgb(${r}, ${g}, ${b})`} name={v.toString()} />
 }
 
-const JSON_FORMATTER_OVERRIDES: Record<string, (v: any, gif: Gif, extra: any, image?: Image) => React.ReactNode> = {
-    width: (v) => `${v}px`,
-    height: (v) => `${v}px`,
-    top: (v) => `${v}px`,
-    left: (v) => `${v}px`,
+const JSON_FORMATTER_OVERRIDES: Record<string, (v: any, gif: Gif, extra: any, image?: GifImage) => React.ReactNode> = {
+    width: pxFormatter,
+    height: pxFormatter,
+    top: pxFormatter,
+    left: pxFormatter,
     disposalMethod: enumFormatter(DISPOSAL_METHODS),
-    magic: (v: number) => `0x${v.toString(16)}`,
-    bitflags: formatBinaryByte,
-    descriptor: formatBinaryByte,
+    magic: hexFormatter,
+    bitflags: binaryByteFormatter,
+    descriptor: binaryByteFormatter,
     delayTime: (v: number) => `${v * 10}ms`,
-    blockSize: byteFormatter,
+    blockSize: byteLengthFormatter,
     text: bufferToString,
     comment: bufferToString,
-    netscapeVersion: (v: Span, gif: Gif) => bufferToString(gif.buffer.bytesForSpan(v)),
+    netscapeVersion: stringFormatter,
     transparentColorIndex: transparentColorIndexFormatter,
     backgroundColorIndex: backgroundColorIndexFormatter,
 }
@@ -65,7 +57,7 @@ interface GifChunkRowProps {
 }
 
 function GifChunkRow({ title, span, body, gif }: GifChunkRowProps) {
-    const chunkSize = byteFormatter(span.end - span.start);
+    const chunkSize = byteLengthFormatter(span.end - span.start);
     return <tr>
         <td style={{ verticalAlign: 'top', textAlign: 'left' }}>{title}</td>
         <td style={{ verticalAlign: 'top', textAlign: 'right', paddingRight: 16 }}>{chunkSize}</td>
@@ -74,19 +66,7 @@ function GifChunkRow({ title, span, body, gif }: GifChunkRowProps) {
     </tr>
 }
 
-function ColorTableDisplayer({ title, table, gif }: { title: string, table: GifColorTable, gif: Gif }) {
-    const colors = table.colors.map(([red, green, blue], idx) =>
-        <ColorPreview
-            key={idx}
-            color={`rgb(${red}, ${green}, ${blue})`}
-            name={`${red}, ${green}, ${blue}`}
-        />
-    );
-
-    return <GifChunkRow title={title} span={table.span} body={colors.length > 15 ? <HiddenBuffer buffer={colors} /> : colors} gif={gif} />
-}
-
-function JsonDisplayer({ fields, gif, image }: { fields: object, gif: Gif, image?: Image }) {
+function JsonDisplayer({ fields, gif, image }: { fields: object, gif: Gif, image?: GifImage }) {
     return Object.entries(fields).filter(([key, _]) => key !== 'span').map(([key, value]) => {
         let data;
         const displayFunc = JSON_FORMATTER_OVERRIDES[key];
@@ -102,7 +82,7 @@ function JsonDisplayer({ fields, gif, image }: { fields: object, gif: Gif, image
     })
 }
 
-function ImageDataFormatter({ gif, image }: { gif: Gif, image: Image }) {
+function ImageDataFormatter({ gif, image }: { gif: Gif, image: GifImage }) {
     const decoder = new GifImageDecoder(gif, image)
 
     const [codes, setCodes] = React.useState<number[] | null>(null);
@@ -115,7 +95,7 @@ function ImageDataFormatter({ gif, image }: { gif: Gif, image: Image }) {
     />
 }
 
-function GifExtension({ ext, gif, image }: { ext: Extension, gif: Gif, image: Image }) {
+function GifExtension({ ext, gif, image }: { ext: Extension, gif: Gif, image: GifImage }) {
     const NAME_TO_KIND: Record<Extension["kind"], string> = {
         graphics: "Graphics Control Extension",
         application: "Application Extension",
@@ -149,12 +129,12 @@ export function GifDisplayer({ gif }: { gif: Gif }) {
                 <tbody>
                     <GifChunkRow title="Header" span={gif.header} body={bufferToString(gif.buffer.bytesForSpan(gif.header))} gif={gif} />
                     <GifChunkRow title="Logical Screen Descriptor" span={gif.logicalScreenDescriptor.span} body={<JsonDisplayer fields={gif.logicalScreenDescriptor} gif={gif} />} gif={gif} />
-                    {gif.globalColorTable && <ColorTableDisplayer gif={gif} table={gif.globalColorTable} title={"Global Color Table"} />}
+                    {gif.globalColorTable && <ColorTableDisplayer file={gif} table={gif.globalColorTable} title={"Global Color Table"} />}
                     {gif.images.map((image, idx) => {
                         return <React.Fragment key={idx}>
                             {image.extensions.map(ext => <GifExtension gif={gif} ext={ext} image={image} key={ext.span.start} />)}
                             <GifChunkRow title="Image Descriptor" span={image.descriptor.span} body={<JsonDisplayer fields={image.descriptor} gif={gif} />} gif={gif} />
-                            {image.localColorTable && <ColorTableDisplayer gif={gif} table={image.localColorTable} title={"Local Color Table"} />}
+                            {image.localColorTable && <ColorTableDisplayer file={gif} table={image.localColorTable} title={"Local Color Table"} />}
                             <GifChunkRow title="Image Data" span={image.span} body={<ImageDataFormatter image={image} gif={gif} />} gif={gif} />
                         </React.Fragment>
                     })}

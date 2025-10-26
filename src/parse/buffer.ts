@@ -104,6 +104,13 @@ export class BufferParser {
         return { start, end }
     }
 
+    getSpanToEnd(): Span {
+        const start = this.index;
+        const end = this.buffer.byteLength
+        this.index = end
+        return { start, end }
+    }
+
     consumeIfEquals(bytes: number[]): boolean {
         if (bytes.length + this.index >= this.buffer.byteLength) {
             return false;
@@ -153,3 +160,6 @@ export class BitParser {
 // const c = new BitParser(new Uint8Array([0b0000_0100, 0b0000_0100]))
 // console.log({ c, a: c.readNBits(16), b: c.readNBits(0) })
 
+export interface Spanned {
+    span: Span;
+}

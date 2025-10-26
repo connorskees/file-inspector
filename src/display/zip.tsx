@@ -65,7 +65,7 @@ export function ZipDisplayer({ zip }: { zip: ZipFile }) {
         <div className='zip' style={{ margin: '64px 16px' }}>
             <table>
                 <tbody>
-                    {zip.fileHeaders.map(header => <FileDisplayer fileHeader={header} zip={zip} />)}
+                    {zip.fileHeaders.map(header => <FileDisplayer key={header.metadata.name.start} fileHeader={header} zip={zip} />)}
                 </tbody >
             </table>
         </div>

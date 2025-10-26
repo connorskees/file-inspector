@@ -1,14 +1,10 @@
-import { BufferParser, Span, BitParser } from "./buffer";
-
-interface Spanned {
-    span: Span;
-}
+import { BufferParser, Span, BitParser, Spanned } from "./buffer";
 
 export interface Gif {
     header: Span,
     logicalScreenDescriptor: LogicalScreenDescriptor,
     globalColorTable: GifColorTable | null,
-    images: Image[],
+    images: GifImage[],
     buffer: BufferParser,
 }
 
@@ -54,7 +50,7 @@ interface PlainTextExtension extends Spanned {
 
 export type Extension = ApplicationExtension | GraphicsControlExtension | CommentExtension | PlainTextExtension
 
-export interface Image extends Spanned {
+export interface GifImage extends Spanned {
     localColorTable: GifColorTable | undefined;
     extensions: Extension[]
     descriptor: ImageDescriptor,
@@ -113,7 +109,7 @@ export class GifParser {
         const logicalScreenDescriptor = this.parseLogicalScreenDescriptor();
         const globalColorTable = this.parseGlobalColorTable(logicalScreenDescriptor);
 
-        const images: Image[] = []
+        const images: GifImage[] = []
 
         while (this.buffer.peek() !== Constants.Trailer) {
             const extensions = []
@@ -335,7 +331,7 @@ export class GifParser {
 
 export class GifImageDecoder {
     public buffer: BufferParser;
-    constructor(public gif: Gif, public image: Image) {
+    constructor(public gif: Gif, public image: GifImage) {
         this.buffer = new BufferParser(new Uint8Array(image.data));
     }
 
